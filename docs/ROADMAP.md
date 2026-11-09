@@ -134,3 +134,13 @@ Acceptance criteria:
 - [x] EAL-OWNER: autonomous executive agent
 - [x] EAL-WORKER: autonomous worker agent
 - [x] EAL-MANAGER: management framework
+
+## Additional modules (extended spec)
+- [x] EAL-VERIFY: formal verification (compiler reproducibility, semantic preservation, no regression)
+- [x] EAL-GEN: genetic language evolution (genome, mutation, crossover, selection)
+- [x] EAL-KNOW: evolutionary knowledge store (experiments, versions, decisions, dedup)
+- [x] EAL-COMPILER: compilation toolchain (toolchain, diagnostics, reproducible hash)
+- [x] EAL-RUNTIME: execution environment (sandbox, resource limits, VM wrapper)
+
+## CI/CD
+- [x] GitHub Actions CI (tests + integration experiment on push/PR)

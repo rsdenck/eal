@@ -26,15 +26,26 @@ The upstream repository `https://github.com/rsdenck/eal.git` was empty (no commi
 |-------|-------|--------|
 | PHASE 0 | Repository audit | Complete |
 | PHASE 1 | Architecture specification, dependency graph, roadmap | Complete |
-| PHASE 2 | EAL-CORE: foundational infrastructure & agent lifecycle | Planned |
-| PHASE 3 | EAL-CL: emergent communication environment | Planned |
-| PHASE 4 | EAL-SC: private encoding, identity, authentication, secure transport | Planned |
-| PHASE 5 | EAL-PL: language spec, parser, compiler, runtime | Planned |
-| PHASE 6 | EAL-EVOLUTION: grammar evolution, versioning, rollback | Planned |
-| PHASE 7 | EAL-LEARNING: NVIDIA training & RL infrastructure | Planned |
-| PHASE 8 | EAL-BENCHMARK: reproducible experiments & baselines | Planned |
-| PHASE 9 | EAL-OBSERVATORY: real telemetry & visualization | Planned |
-| PHASE 10 | Integration: end-to-end experiment | Planned |
+| PHASE 2 | EAL-CORE: foundational infrastructure & agent lifecycle | Complete |
+| PHASE 3 | EAL-CL: emergent communication language | Complete |
+| PHASE 4 | EAL-SC: private communication (identity, auth, transport) | Complete |
+| PHASE 5 | EAL-PL: original programming language + compiler + VM | Complete |
+| PHASE 6 | EAL-EVOLUTION: language evolution engine | Complete |
+| PHASE 7 | EAL-LEARNING: multi-agent RL loop (CPU reference) | Complete |
+| PHASE 8 | EAL-BENCHMARK: metrics & baseline comparison | Complete |
+| PHASE 9 | EAL-OBSERVATORY: real telemetry + dashboard | Complete |
+| PHASE 10 | Integration: end-to-end experiment | Complete |
+
+### Additional modules (extended spec)
+
+| Module | Focus | Status |
+|--------|-------|--------|
+| EAL-COMPILER | Compilation toolchain, diagnostics, reproducible hash | Complete |
+| EAL-RUNTIME | Sandboxed execution, resource limits, VM wrapper | Complete |
+| EAL-VERIFY | Formal verification (compiler, semantics, regression) | Complete |
+| EAL-GEN | Genetic language evolution (genome, mutation, crossover) | Complete |
+| EAL-KNOW | Evolutionary knowledge store (experiments, versions, decisions) | Complete |
+| EAL-ORG | Autonomous organization (Owner, Worker, hierarchy, tasks) | Complete |
 
 ## Core principles
 
@@ -68,6 +79,10 @@ eal_evolution/   # EAL-EVOLUTION: language evolution engine (mutation, selection
 eal_learning/    # EAL-LEARNING: learning mechanisms (RL, representations)
 eal_benchmark/   # EAL-BENCHMARK: measurement & baseline comparison
 eal_observatory/ # EAL-OBSERVATORY: telemetry & visualization
+eal_verify/      # EAL-VERIFY: formal verification
+eal_gen/         # EAL-GEN: genetic language evolution
+eal_know/        # EAL-KNOW: evolutionary knowledge store
+eal_org/         # EAL-ORG: autonomous organization framework
 experiments/     # reproducible experiment configs & results
 docs/            # architecture, API, research records
 tests/           # unit & integration tests

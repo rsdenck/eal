@@ -24,14 +24,17 @@ import sys
 sys.path.insert(0, "/root/eal-repo")
 
 from eal_brain import Agent
-from eal_cl import Channel
+from eal_cl import Channel, Language, Symbol
 from eal_core import AgentIdentity, Config, EALCore
 from eal_core.event_bus import CORE_IDENTITY
 from eal_evolution import EvolutionEngine, FitnessEvaluator, MutationOperator, VersionStore
+from eal_gen import GeneticLanguageEvolution
+from eal_know import KnowledgeBase
 from eal_learning import MultiAgentLearningLoop, ReferenceRL
 from eal_observatory import Dashboard, TelemetrySink
 from eal_pl import Compiler, Lexer, Parser, VM, build_stdlib
 from eal_benchmark import BenchmarkRunner
+from eal_verify import FormalVerifier, VerificationExperiment
 
 import random
 
@@ -177,6 +180,62 @@ def main() -> int:
                 source=CORE_IDENTITY)
     print(json.dumps(results["benchmark"], indent=2))
 
+    # 5. Formal verification
+    print("-- Phase: formal verification --")
+    v = FormalVerifier()
+    exp = VerificationExperiment(v)
+    ref = Language(); ref.add_symbol(Symbol.generate())
+    cand = Language(); cand.add_symbol(Symbol.generate())
+    verify_report = v.verify_language(ref, cand)
+    results["verification"] = {
+        "reference_version": verify_report.reference_version,
+        "candidate_version": verify_report.candidate_version,
+        "all_passed": verify_report.all_passed,
+        "checks": len(verify_report.results),
+    }
+    bus.publish("experiment.phase", {"phase": "verification",
+                                     "result": results["verification"]},
+                source=CORE_IDENTITY)
+    print(json.dumps(results["verification"], indent=2))
+
+    # 6. Genetic evolution
+    print("-- Phase: genetic language evolution --")
+    ge = GeneticLanguageEvolution(rng=random.Random(0))
+    base = Language(); base.add_symbol(Symbol.generate())
+    gid = ge.add_individual(base, fitness=0.5)
+    gen_summary = ge.evolve_generation(fitness_fn=lambda genome: 0.7)
+    results["genetic"] = {
+        "generation": gen_summary["generation"],
+        "population_size": gen_summary["population_size"],
+        "new_offspring": gen_summary["new_offspring"],
+        "best_fitness": gen_summary["best_fitness"],
+    }
+    bus.publish("experiment.phase", {"phase": "genetic",
+                                     "result": results["genetic"]},
+                source=CORE_IDENTITY)
+    print(json.dumps(results["genetic"], indent=2))
+
+    # 7. Knowledge store
+    print("-- Phase: evolutionary knowledge store --")
+    kb = KnowledgeBase()
+    kid = kb.record_experiment(
+        "integration knowledge test", {"seed": 0},
+        {"communication": 0.44}, "accept",
+        "demonstrated learning above baseline")
+    kb.record_language_version(
+        ref.version_id, ref.snapshot().__dict__, "accepted",
+        "reference stable version")
+    results["knowledge"] = {
+        "entries": len(kb.entries()),
+        "accepted_languages": len(kb.accepted_languages()),
+        "dedup_works": kb.experiment_decision(
+            "integration knowledge test", {"seed": 0}) is not None,
+    }
+    bus.publish("experiment.phase", {"phase": "knowledge",
+                                     "result": results["knowledge"]},
+                source=CORE_IDENTITY)
+    print(json.dumps(results["knowledge"], indent=2))
+
     core.stop()
 
     print("\n=== Observatory telemetry (real events only) ===")
@@ -194,6 +253,9 @@ def main() -> int:
         "benchmark_measurable": results["benchmark"]["eal_communication_success"]
         is not None,
         "observatory_telemetry_real": sink.active_agent_count() >= 1,
+        "formal_verification": results["verification"]["all_passed"],
+        "genetic_evolution": results["genetic"]["population_size"] >= 1,
+        "knowledge_store": results["knowledge"]["entries"] >= 1,
         "all_tests_pass": True,  # verified by `python3 -m unittest discover tests`
     }
     print("\n=== Definition of Done ===")

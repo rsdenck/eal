@@ -88,14 +88,14 @@ class Config:
 
     def with_seed(self, seed: int) -> "Config":
         """Return a copy with a different seed (for experiment sweeps)."""
-        cfg = Config(**self.to_dict())
+        cfg = Config.from_dict(self.to_dict())
         cfg.seed = seed
         cfg.validate()
         return cfg
 
     def with_module(self, name: str) -> "Config":
         """Return a copy with an additional module enabled."""
-        cfg = Config(**self.to_dict())
+        cfg = Config.from_dict(self.to_dict())
         cfg.modules.add(name)
         cfg.validate()
         return cfg

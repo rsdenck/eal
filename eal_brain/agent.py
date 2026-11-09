@@ -30,6 +30,8 @@ class Agent:
         inference: Model inference engine.
         learner: Learning engine (separate from inference).
         context: Isolated execution context.
+        encoder: Learnable concept -> symbol encoder (communication).
+        decoder: Learnable symbol -> concept decoder (communication).
     """
 
     def __init__(self, identity: AgentIdentity,
@@ -47,6 +49,24 @@ class Agent:
         self.context = context or ExecutionContext(
             agent_id=str(identity), seed=seed,
         )
+        # Lazy-initialized communication encoders (imported inside methods to
+        # avoid coupling eal_brain to eal_cl at module load time).
+        self._encoder: Any = None
+        self._decoder: Any = None
+
+    @property
+    def encoder(self) -> Any:
+        if self._encoder is None:
+            from eal_cl import Encoder
+            self._encoder = Encoder(rng=random.Random(self.context.seed))
+        return self._encoder
+
+    @property
+    def decoder(self) -> Any:
+        if self._decoder is None:
+            from eal_cl import Decoder
+            self._decoder = Decoder(rng=random.Random(self.context.seed + 1))
+        return self._decoder
 
     def observe(self, key: str, value: Any, persistent: bool = False) -> None:
         """Record an observation in memory (e.g. a received message)."""
@@ -88,3 +108,6 @@ class Agent:
             "context": self.context.snapshot(),
             "inference_backend": type(self.inference).__name__,
         }
+
+
+import random  # noqa: E402  (used by encoder/decoder property defaults)

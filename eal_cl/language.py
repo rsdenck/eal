@@ -50,6 +50,10 @@ class Language:
         self.vocabulary = vocabulary or Vocabulary.create()
         self.version_id = self._compute_version_id()
 
+    @classmethod
+    def create(cls) -> "Language":
+        return cls()
+
     def snapshot(self) -> LanguageVersion:
         return LanguageVersion(
             version_id=self.version_id,

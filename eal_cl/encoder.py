@@ -74,6 +74,15 @@ class Encoder:
         self._symbol_to_concept[symbols] = concept
         return symbols
 
+    def stored_symbols(self, concept: Hashable) -> tuple[str, ...] | None:
+        """Return the stored symbol sequence for ``concept``, if any.
+
+        Used during evaluation so the trained convention is reused rather than
+        re-generated (which could produce symbols the decoder does not know).
+        """
+        assoc = self._associations.get(concept)
+        return assoc.symbols if assoc is not None else None
+
     def reinforce(self, concept: Hashable, symbols: tuple[str, ...],
                   reward: float) -> None:
         """Update association strength based on communication outcome."""

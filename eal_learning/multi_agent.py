@@ -16,14 +16,15 @@ import hashlib
 import json
 import random
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
 from eal_brain import Agent, ReferenceLearner
 from eal_brain.state import AgentState
 from eal_cl import Channel, Encoder, Decoder
 from eal_core.config import Config
+from eal_core.event_bus import EventBus
 from eal_core.experiment import ExperimentRecord, ExperimentResult
-from eal_core.identity import AgentIdentity, CORE_IDENTITY
+from eal_core.identity import AgentIdentity
 
 
 @dataclass
@@ -142,16 +143,24 @@ class MultiAgentLearningLoop:
     and decoder. They communicate only through explicit :class:`~eal_cl.Channel`
     instances. Training updates agent state; evaluation measures without
     updating; inference encodes/decodes.
+
+    When an :class:`~eal_core.event_bus.EventBus` is supplied, every real
+    message sent/received is published on the bus so the observatory can
+    observe it. The loop never lets the observatory influence execution.
     """
 
     def __init__(self, agents: list[Agent],
                  algorithm: RLAlgorithm | None = None,
                  rng: random.Random | None = None,
-                 config: Config | None = None) -> None:
+                 config: Config | None = None,
+                 symbol_pool: list[str] | None = None,
+                 bus: Optional[EventBus] = None) -> None:
         self.agents = list(agents)
         self.algorithm = algorithm or ReferenceRL(seed=0)
         self.rng = rng or random.Random()
         self.config = config or Config()
+        self.symbol_pool = list(symbol_pool or [f"sym-{i}" for i in range(8)])
+        self.bus = bus
         self._experiments: list[ExperimentRecord] = []
 
     def _pair_channels(self) -> list[tuple[Agent, Agent, Channel]]:
@@ -164,6 +173,22 @@ class MultiAgentLearningLoop:
             pairs.append((a, b, Channel(str(a.identity), str(b.identity))))
         return pairs
 
+    def _publish(self, event_type: str, sender: Agent,
+                 receiver: Agent, symbols: tuple[str, ...],
+                 concept: Any) -> None:
+        if self.bus is None:
+            return
+        self.bus.publish(
+            event_type,
+            {
+                "sender": str(sender.identity),
+                "receiver": str(receiver.identity),
+                "symbols": list(symbols),
+                "concept": concept,
+            },
+            source=sender.identity,
+        )
+
     def run_round(self, concepts: list[Any],
                   channel: Channel, sender: Agent, receiver: Agent,
                   training: bool = True) -> bool:
@@ -174,13 +199,16 @@ class MultiAgentLearningLoop:
         """
         concept = self.rng.choice(concepts)
         symbols = sender.encoder.encode(
-            concept, available_symbols=list(sender.state.representations.keys())
-            or ["sym-0"])
+            concept, available_symbols=self.symbol_pool)
         channel.send(str(sender.identity), symbols, concept)
+        self._publish("message.sent", sender, receiver, symbols, concept)
         message = channel.receive(str(receiver.identity))
         if message is None:
             return False
-        guess = receiver.decoder.decode(message.symbols)
+        self._publish("message.received", receiver, sender,
+                      message.symbols, message.concept)
+        guess = receiver.decoder.decode(message.symbols,
+                                        candidate_concepts=concepts)
         correct = guess == concept
         reward = 1.0 if correct else 0.0
         if training:
@@ -211,7 +239,6 @@ class MultiAgentLearningLoop:
 
         pairs = self._pair_channels()
         if not pairs:
-            # Single-agent degenerate case: no communication possible.
             result = MultiAgentLearningResult(
                 experiment_id=self._exp_id(hypothesis, seed, rounds),
                 agents=len(self.agents), rounds=rounds,
@@ -239,14 +266,17 @@ class MultiAgentLearningLoop:
         for r in range(eval_rounds):
             a, b, ch = pairs[r % len(pairs)]
             concept = rng.choice(concepts)
-            symbols = a.encoder.encode(
-                concept, available_symbols=list(a.state.representations.keys())
-                or ["sym-0"])
+            # Reuse the trained convention (stored symbols) rather than
+            # re-generating, so the decoder sees symbols it learned.
+            symbols = a.encoder.stored_symbols(concept)
+            if symbols is None:
+                symbols = a.encoder.encode(
+                    concept, available_symbols=self.symbol_pool)
             ch.send(str(a.identity), symbols, concept)
             msg = ch.receive(str(b.identity))
             if msg is None:
                 continue
-            guess = b.decoder.decode(msg.symbols)
+            guess = b.decoder.decode(msg.symbols, candidate_concepts=concepts)
             correct = guess == concept
             eval_experiences.append(Experience(
                 agent_id=str(b.identity), concept=concept,

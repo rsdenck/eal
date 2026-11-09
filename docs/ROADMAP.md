@@ -120,4 +120,17 @@ Acceptance criteria:
 - All telemetry originates from real system events; no synthetic data presented as results
 
 ## PHASE 10 — Integration
-- [ ] End-to-end experiment: agents learn communication, write/compile/run EAL-PL programs, evolve language, benchmark results observed
+- [x] End-to-end experiment: agents learn communication, write/compile/run EAL-PL programs, evolve language, benchmark results observed
+
+## EAL-ORG — Autonomous Organization (extended spec acceptance criteria)
+- [x] Organization Engine: departments, teams, agents, roles, hierarchy
+- [x] Hierarchy Manager: tree, cycle/orphan prevention, delegation traceability
+- [x] Role Manager: roles + permissions
+- [x] Agent Factory: EAL-FACTORY creation cycle (12 steps)
+- [x] Agent Lifecycle Manager: create/promote/demote/suspend/replace/retire
+- [x] Task Delegation Engine: EAL-ORCHESTRATOR command & control
+- [x] Agent Performance Evaluator: performance management
+- [x] Governance & Policy Engine + Organizational Audit Log
+- [x] EAL-OWNER: autonomous executive agent
+- [x] EAL-WORKER: autonomous worker agent
+- [x] EAL-MANAGER: management framework
